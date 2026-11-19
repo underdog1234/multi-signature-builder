@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.claude/
+
+# earlier one-off Thunderbird signature and its logos (not part of the builder)
+/multi-email-signature.html
+/multi-logo-coral.png
+/multi-logo-lavender.png

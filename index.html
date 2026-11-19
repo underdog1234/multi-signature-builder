@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en-NZ">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multi Email Signature Builder</title>
+<style>
+  :root {
+    --red: #FF6354;
+    --warm-grey: #E6E1DB;
+    --light-grey: #F5F3F3;
+    --charcoal: #575757;
+    --black: #242424;
+    --deep-red: #60153B;
+    --line: #D8D3CC;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    color: var(--black);
+    background: var(--light-grey);
+    line-height: 1.4;
+  }
+  header { background: var(--black); border-bottom: 4px solid var(--red); }
+  .wrap { max-width: 1060px; margin: 0 auto; padding: 0 16px; }
+  header .wrap { display: flex; align-items: center; gap: 16px; padding-top: 16px; padding-bottom: 16px; }
+  header img { height: 28px; width: auto; display: block; }
+  header h1 { margin: 0; font-size: 16px; font-weight: 700; color: #fff; letter-spacing: .02em; }
+  main { padding-top: 24px; padding-bottom: 48px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  @media (min-width: 900px) { .grid { grid-template-columns: 420px minmax(0, 1fr); align-items: start; } }
+  .card { background: #fff; border-radius: 12px; padding: 24px; }
+  .card + .card { margin-top: 24px; }
+  h2 { margin: 0 0 16px; font-size: 18px; }
+  .field { margin-bottom: 16px; }
+  label.lbl, .legend { display: block; font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .opt { font-weight: 400; color: var(--charcoal); }
+  input[type=text], input[type=email], input[type=tel] {
+    width: 100%; font: inherit; font-size: 16px; color: var(--black);
+    padding: 10px 12px; border: 1px solid #BDB7AE; border-radius: 8px; background: #fff;
+  }
+  select {
+    width: 100%; font: inherit; font-size: 16px; color: var(--black);
+    padding: 10px 12px; border: 1px solid #BDB7AE; border-radius: 8px; background: #fff;
+  }
+  input:focus-visible, select:focus-visible, button:focus-visible, a.btn:focus-visible, summary:focus-visible, textarea:focus-visible {
+    outline: 3px solid var(--red); outline-offset: 2px;
+  }
+  .err { color: #B3261E; font-size: 13px; margin-top: 4px; min-height: 0; }
+  fieldset { border: 0; padding: 0; margin: 0 0 16px; min-width: 0; }
+
+  /* logo style picker */
+  .styles { display: grid; gap: 8px; }
+  .style-opt input, .swatch input { position: absolute; opacity: 0; pointer-events: none; }
+  .style-opt label {
+    display: flex; align-items: center; gap: 12px; padding: 10px 12px; cursor: pointer;
+    border: 1px solid var(--line); border-radius: 8px; font-size: 14px;
+  }
+  .style-opt small { display: block; color: var(--charcoal); font-size: 12px; }
+  .style-opt input:checked + label { border-color: var(--black); box-shadow: inset 0 0 0 1px var(--black); background: var(--light-grey); }
+  .style-opt input:focus-visible + label { outline: 3px solid var(--red); outline-offset: 2px; }
+
+  /* colour swatches */
+  .swatches { display: flex; flex-wrap: wrap; gap: 12px 10px; }
+  .swatch { position: relative; width: 72px; text-align: center; }
+  .swatch label { display: block; cursor: pointer; font-size: 12px; line-height: 1.2; }
+  .dot {
+    display: block; width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 6px;
+    border: 1px solid #BDB7AE;
+  }
+  .swatch input:checked + label .dot { box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--black); }
+  .swatch input:focus-visible + label .dot { outline: 3px solid var(--red); outline-offset: 5px; }
+  .swatch input:checked + label { font-weight: 700; }
+
+  /* preview */
+  .preview-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+  .preview-head h2 { margin: 0; }
+  .seg { display: inline-flex; border: 1px solid #BDB7AE; border-radius: 8px; overflow: hidden; }
+  .seg button { font: inherit; font-size: 13px; padding: 6px 12px; border: 0; background: #fff; color: var(--black); cursor: pointer; }
+  .seg button[aria-pressed=true] { background: var(--black); color: #fff; }
+  .stage { background: #fff; border: 1px solid var(--line); border-radius: 8px; padding: 24px; overflow-x: auto; }
+  .stage.dark { background: var(--black); border-color: var(--black); }
+  .stage.checker { background: #fff; }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .btn {
+    font: inherit; font-size: 15px; font-weight: 700; text-decoration: none; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; text-align: center;
+    padding: 11px 16px; border-radius: 8px; border: 2px solid var(--black);
+    background: #fff; color: var(--black);
+  }
+  .btn.primary { background: var(--black); color: #fff; }
+  .btn[aria-disabled=true], .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .hint { font-size: 13px; color: var(--charcoal); margin: 12px 0 0; }
+  .group-label { font-size: 13px; font-weight: 700; color: var(--charcoal); margin: 20px 0 0; text-transform: uppercase; letter-spacing: .04em; }
+  .status { font-size: 14px; font-weight: 700; color: var(--deep-red); min-height: 20px; margin: 10px 0 0; }
+  .warn { background: #FFF1CC; border: 1px solid #E0B94C; border-radius: 8px; padding: 10px 12px; font-size: 14px; margin-bottom: 16px; }
+
+  details { border-top: 1px solid var(--line); padding: 12px 0; }
+  details:first-of-type { margin-top: 16px; }
+  summary { cursor: pointer; font-weight: 700; font-size: 15px; }
+  details p, details ol { font-size: 14px; margin: 10px 0 0; color: var(--charcoal); }
+  details ol { padding-left: 20px; }
+  textarea {
+    width: 100%; min-height: 200px; margin-top: 10px; font: 12px/1.4 Consolas, Menlo, monospace;
+    padding: 10px; border: 1px solid #BDB7AE; border-radius: 8px; background: var(--light-grey); color: var(--black);
+  }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  noscript { display: block; padding: 16px; background: #FFF1CC; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <img src="logos/multi-logo-red.png" alt="MULTI" width="100" height="28">
+    <h1>Email signature builder</h1>
+  </div>
+</header>
+
+<noscript>This tool needs JavaScript turned on.</noscript>
+
+<main class="wrap">
+  <div id="setupWarning" class="warn" hidden>
+    The hosted logo address isn't set yet, so signatures built here won't show the logo in other people's email.
+    Set <code>PUBLISHED_LOGO_BASE</code> near the top of the script in <code>index.html</code>.
+  </div>
+
+  <div class="grid">
+    <!-- LEFT: inputs -->
+    <section>
+      <div class="card">
+        <h2>Your details</h2>
+        <form id="form" novalidate autocomplete="off">
+          <div class="field">
+            <label class="lbl" for="name">Full name</label>
+            <input type="text" id="name" name="name" placeholder="Joel Davidson" autocomplete="name">
+          </div>
+          <div class="field">
+            <label class="lbl" for="title">Job title</label>
+            <input type="text" id="title" name="title" placeholder="Senior Technician" autocomplete="organization-title">
+          </div>
+          <div class="field">
+            <label class="lbl" for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="joel@multi-media.co.nz" autocomplete="email" inputmode="email">
+            <div class="err" id="emailErr" role="alert"></div>
+          </div>
+          <div class="field">
+            <label class="lbl" for="phone">Phone <span class="opt">(optional)</span></label>
+            <input type="tel" id="phone" name="phone" placeholder="+64 27 880 3722" autocomplete="tel">
+          </div>
+          <div class="field" style="margin-bottom:0">
+            <label class="lbl" for="office">Office</label>
+            <select id="office" name="office"></select>
+          </div>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Logo</h2>
+        <fieldset>
+          <legend class="legend">Style</legend>
+          <div class="styles" id="styles"></div>
+        </fieldset>
+        <fieldset style="margin-bottom:0">
+          <legend class="legend">Colour</legend>
+          <div class="swatches" id="swatches"></div>
+        </fieldset>
+      </div>
+    </section>
+
+    <!-- RIGHT: preview + outputs -->
+    <section>
+      <div class="card">
+        <div class="preview-head">
+          <h2>Preview</h2>
+          <div class="seg" role="group" aria-label="Preview background">
+            <button type="button" id="bgLight" aria-pressed="true">Light</button>
+            <button type="button" id="bgDark" aria-pressed="false">Dark</button>
+          </div>
+        </div>
+        <div class="stage" id="stage"><div id="preview"></div></div>
+
+        <p class="group-label">As text and links</p>
+        <div class="actions" style="margin-top:8px">
+          <button type="button" class="btn primary" id="btnDownload">Download signature (.html)</button>
+          <button type="button" class="btn" id="btnCopyRich">Copy signature</button>
+          <button type="button" class="btn" id="btnCopyHtml">Copy HTML code</button>
+        </div>
+        <p class="group-label">As a picture</p>
+        <div class="actions" style="margin-top:8px">
+          <button type="button" class="btn" id="btnPicture">Download signature picture (.png)</button>
+          <a class="btn" id="btnPng" href="#" download>Download logo only (.png)</a>
+        </div>
+        <p class="hint">Both pictures have a transparent background. The signature picture is saved at double size so it stays sharp. If your email app shows it too big, shrink it to half.</p>
+        <p class="hint" id="hint">Add your name, job title and email to download or copy.</p>
+        <p class="status" id="status" role="status" aria-live="polite"></p>
+
+        <details>
+          <summary>How to use it</summary>
+          <p><strong>Thunderbird</strong></p>
+          <ol>
+            <li>Click <em>Download signature (.html)</em> and save it somewhere permanent.</li>
+            <li>Open <em>Account Settings</em> and pick your email account.</li>
+            <li>Tick <em>Attach the signature from a file</em> and choose the file you saved.</li>
+          </ol>
+          <p><strong>Outlook or Gmail</strong></p>
+          <ol>
+            <li>Click <em>Copy signature</em>.</li>
+            <li>Open the signature settings and paste it into the signature box.</li>
+          </ol>
+          <p><strong>Picture signature</strong></p>
+          <ol>
+            <li>Click <em>Download signature picture (.png)</em>.</li>
+            <li>In your email app's signature box, insert the picture (look for the picture icon).</li>
+          </ol>
+          <p>A picture can't have clickable links, so use the text version where you can. For the text version, the logo is loaded from this website, so it shows for anyone you email. Some email apps hide pictures until the reader allows them.</p>
+        </details>
+        <details>
+          <summary>View HTML code</summary>
+          <textarea id="code" readonly spellcheck="false" aria-label="Signature HTML code"></textarea>
+        </details>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+(() => {
+  'use strict';
+
+  // Where the logo PNGs live on the web. When this page is served from github.io it
+  // uses its own logos/ folder automatically; otherwise it falls back to this address.
+  const PUBLISHED_LOGO_BASE = 'https://underdog1234.github.io/multi-signature-builder/logos/';
+
+  const ON_GITHUB_PAGES = /\.github\.io$/.test(location.hostname);
+  const LOGO_BASE = ON_GITHUB_PAGES ? new URL('logos/', location.href).href : PUBLISHED_LOGO_BASE;
+  const TEXT_COLOUR = '#575757'; // brand Charcoal
+
+  // Palette from "Multi Colour Palette.pdf".
+  const COLOURS = [
+    { slug: 'red',        name: 'Multi Red',  hex: '#FF6354' },
+    { slug: 'warm-grey',  name: 'Warm Grey',  hex: '#E6E1DB' },
+    { slug: 'blue',       name: 'Blue',       hex: '#5298FE' },
+    { slug: 'yellow',     name: 'Yellow',     hex: '#F3F4A8' },
+    { slug: 'deep-red',   name: 'Deep Red',   hex: '#60153B' },
+    { slug: 'purple',     name: 'Purple',     hex: '#CEC9FF' },
+    { slug: 'white',      name: 'White',      hex: '#FFFFFF' },
+    { slug: 'light-grey', name: 'Light Grey', hex: '#F5F3F3' },
+    { slug: 'charcoal',   name: 'Charcoal',   hex: '#575757' },
+    { slug: 'warm-black', name: 'Warm Black', hex: '#242424' },
+  ];
+  const LOCKUP_COLOURS = ['red', 'warm-grey', 'white', 'light-grey', 'charcoal', 'warm-black'];
+
+  // The website is the same for everyone. The address is one of the two offices.
+  const WEBSITE = 'multi-media.co.nz';
+  const OFFICES = [
+    { id: 'auckland',     label: 'Auckland',     address: '2 McColl St, Newmarket, Auckland 1023' },
+    { id: 'christchurch', label: 'Christchurch', address: 'Unit 3, 1-5 Cass Street, Sydenham, Christchurch 5028' },
+  ];
+
+  // Display sizes are in CSS pixels; the PNGs are 4x that for sharp screens.
+  const STYLES = [
+    { id: 'wordmark', label: 'MULTI',            note: 'Wordmark only',                  prefix: 'multi-logo',       w: 260, h: 73,  alt: 'MULTI',                              colours: COLOURS.map(c => c.slug) },
+    { id: 'heritage', label: 'Heritage lockup',  note: 'MULTI with "Since 1974"',        prefix: 'heritage-lockup',  w: 260, h: 95,  alt: 'MULTI, since 1974',                  colours: LOCKUP_COLOURS },
+    { id: 'company',  label: 'Company lockup',   note: 'MULTI with "Multi-Media Systems Ltd." and locations', prefix: 'company-lockup', w: 440, h: 93, alt: 'MULTI, Multi-Media Systems Ltd.', colours: LOCKUP_COLOURS },
+  ];
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  let styleId = 'wordmark';
+  let colourSlug = 'purple';
+  const style = () => STYLES.find((s) => s.id === styleId);
+  const colour = () => COLOURS.find((c) => c.slug === colourSlug);
+  const logoFile = () => `${style().prefix}-${colourSlug}.png`;
+
+  /* ---------- form values ---------- */
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  function values() {
+    const v = {};
+    ['name', 'title', 'email', 'phone'].forEach((k) => { v[k] = $(k).value.trim(); });
+    v.address = (OFFICES.find((o) => o.id === $('office').value) || OFFICES[0]).address;
+    v.website = WEBSITE;
+    return v;
+  }
+  const isValid = (v) => !!(v.name && v.title && EMAIL_RE.test(v.email));
+
+  /* ---------- the signature itself ---------- */
+  function buildHtml(v, base) {
+    const site = v.website.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+    const link = (href, text) =>
+      `<a href="${esc(href)}" style="color: ${TEXT_COLOUR}; text-decoration: none;">${esc(text)}</a>`;
+    const lines = [];
+    if (v.email)   lines.push(link('mailto:' + v.email, v.email));
+    if (v.phone)   lines.push(link('tel:' + v.phone.replace(/[^\d+]/g, ''), v.phone));
+    if (v.address) lines.push(esc(v.address));
+    if (site)      lines.push(link('https://' + site, site));
+
+    const s = style();
+    const logoHref = site ? 'https://' + site : 'https://multi-media.co.nz';
+    const img = `<img src="${esc(base + logoFile())}" alt="${esc(s.alt)}" width="${s.w}" height="${s.h}" style="display: block; border: 0; width: ${s.w}px; height: ${s.h}px;">`;
+
+    return `<div style="font-family: Arial, Helvetica, sans-serif; font-size: 11pt; line-height: 1.2; color: ${TEXT_COLOUR};">
+<p style="margin: 0 0 18px 0;"><strong>${esc(v.name)}</strong><br><strong>${esc(v.title)}</strong></p>
+` + (lines.length ? `<p style="margin: 0;">${lines.join('<br>')}</p>\n` : '') +
+`<p style="margin: 26px 0 0 0;"><a href="${esc(logoHref)}" style="text-decoration: none; border: 0;">${img}</a></p>
+</div>
+`;
+  }
+
+  function plainText(v) {
+    const site = v.website.replace(/^https?:\/\//i, '').replace(/\/+$/, '');
+    return [v.name, v.title, '', v.email, v.phone, v.address, site].filter((x, i) => x || i === 2).join('\n');
+  }
+
+  /* ---------- pickers ---------- */
+  function renderStyles() {
+    $('styles').innerHTML = STYLES.map((s) => `
+      <div class="style-opt">
+        <input type="radio" name="style" id="style-${s.id}" value="${s.id}"${s.id === styleId ? ' checked' : ''}>
+        <label for="style-${s.id}"><span><strong>${esc(s.label)}</strong><small>${esc(s.note)}</small></span></label>
+      </div>`).join('');
+    $('styles').querySelectorAll('input').forEach((el) => el.addEventListener('change', () => {
+      styleId = el.value;
+      if (!style().colours.includes(colourSlug)) colourSlug = style().colours.includes('red') ? 'red' : style().colours[0];
+      renderSwatches();
+      update();
+    }));
+  }
+
+  function renderSwatches() {
+    const available = COLOURS.filter((c) => style().colours.includes(c.slug));
+    $('swatches').innerHTML = available.map((c) => `
+      <div class="swatch">
+        <input type="radio" name="colour" id="col-${c.slug}" value="${c.slug}"${c.slug === colourSlug ? ' checked' : ''}>
+        <label for="col-${c.slug}"><span class="dot" style="background:${c.hex}"></span>${esc(c.name)}</label>
+      </div>`).join('');
+    $('swatches').querySelectorAll('input').forEach((el) => el.addEventListener('change', () => {
+      colourSlug = el.value;
+      update();
+    }));
+  }
+
+  /* ---------- update everything ---------- */
+  function update() {
+    const raw = values();
+    const v = { ...raw, name: raw.name || 'Your Name', title: raw.title || 'Job Title', email: raw.email || 'you@multi-media.co.nz' };
+    // The preview loads the logo from this site's own folder so it works before publishing.
+    $('preview').innerHTML = buildHtml(v, 'logos/');
+
+    const valid = isValid(raw);
+    const code = valid ? buildHtml(raw, LOGO_BASE) : '';
+    $('code').value = code;
+
+    ['btnDownload', 'btnCopyRich', 'btnCopyHtml', 'btnPicture'].forEach((id) => { $(id).disabled = !valid; });
+    const png = $('btnPng');
+    png.href = 'logos/' + logoFile();
+    png.setAttribute('download', logoFile());
+    $('hint').hidden = valid;
+    $('emailErr').textContent = raw.email && !EMAIL_RE.test(raw.email) ? 'That email address doesn’t look right.' : '';
+    $('setupWarning').hidden = ON_GITHUB_PAGES || !/REPLACE/.test(PUBLISHED_LOGO_BASE);
+  }
+
+  /* ---------- actions ---------- */
+  let statusTimer;
+  function say(msg) {
+    $('status').textContent = msg;
+    clearTimeout(statusTimer);
+    statusTimer = setTimeout(() => { $('status').textContent = ''; }, 3500);
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch (e) {
+      // Older browsers or non-secure pages: copy through a temporary text box.
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;left:-9999px;top:0;';
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (e2) { /* ignore */ }
+      ta.remove();
+      return ok;
+    }
+  }
+
+  async function copyRich() {
+    const v = values();
+    const html = buildHtml(v, LOGO_BASE);
+    try {
+      await navigator.clipboard.write([new ClipboardItem({
+        'text/html': new Blob([html], { type: 'text/html' }),
+        'text/plain': new Blob([plainText(v)], { type: 'text/plain' }),
+      })]);
+      return true;
+    } catch (e) {
+      // Fallback: copy what is shown in the preview.
+      const range = document.createRange();
+      range.selectNodeContents($('preview'));
+      const sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (e2) { /* ignore */ }
+      sel.removeAllRanges();
+      return ok;
+    }
+  }
+
+  function slug(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''); }
+
+  function download() {
+    const v = values();
+    const blob = new Blob([buildHtml(v, LOGO_BASE)], { type: 'text/html' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (slug(v.name) || 'multi') + '-email-signature.html';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    say('Downloaded.');
+  }
+
+  // Draws the whole signature onto a transparent canvas, at 2x for sharp screens.
+  // The measurements copy the HTML version: Arial 11pt, 1.2 line height, 18px and 26px gaps.
+  async function signatureBlob() {
+    const v = values();
+    const s = style();
+    const FS = 11 * 96 / 72;
+    const LH = FS * 1.2;
+    const BASELINE = FS * 0.9465;   // where Arial's baseline sits inside a 1.2 line box
+    const SCALE = 2, PAD = 4;
+    const font = (bold) => `${bold ? 'bold ' : ''}${FS}px Arial, Helvetica, sans-serif`;
+    const contact = [v.email, v.phone, v.address, v.website].filter(Boolean);
+
+    const img = new Image();
+    img.src = 'logos/' + logoFile();
+    await img.decode();
+
+    const probe = document.createElement('canvas').getContext('2d');
+    const width = (t, bold) => { probe.font = font(bold); return probe.measureText(t).width; };
+    const textW = Math.max(width(v.name, true), width(v.title, true), ...contact.map((t) => width(t, false)));
+
+    const W = Math.ceil(Math.max(textW, s.w)) + PAD * 2;
+    const H = Math.ceil(PAD + LH * 2 + 18 + LH * contact.length + 26 + s.h + PAD);
+    const canvas = document.createElement('canvas');
+    canvas.width = W * SCALE;
+    canvas.height = H * SCALE;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(SCALE, SCALE);
+    ctx.imageSmoothingQuality = 'high';
+    ctx.fillStyle = TEXT_COLOUR;
+    ctx.textBaseline = 'alphabetic';
+
+    let y = PAD;
+    ctx.font = font(true);
+    ctx.fillText(v.name, PAD, y + BASELINE);
+    ctx.fillText(v.title, PAD, y + LH + BASELINE);
+    y += LH * 2 + 18;
+    ctx.font = font(false);
+    contact.forEach((t, i) => ctx.fillText(t, PAD, y + i * LH + BASELINE));
+    y += LH * contact.length + 26;
+    ctx.drawImage(img, PAD, y, s.w, s.h);
+
+    return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('no image'))), 'image/png'));
+  }
+
+  async function downloadPicture() {
+    try {
+      const blob = await signatureBlob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (slug(values().name) || 'multi') + '-email-signature.png';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      say('Downloaded.');
+    } catch (e) {
+      say('Couldn’t make the picture. Try again, or use the HTML version.');
+    }
+  }
+
+  $('btnDownload').addEventListener('click', download);
+  $('btnPicture').addEventListener('click', downloadPicture);
+  $('btnCopyRich').addEventListener('click', async () => say((await copyRich()) ? 'Signature copied. Paste it into your email app’s signature box.' : 'Couldn’t copy. Use Download instead.'));
+  $('btnCopyHtml').addEventListener('click', async () => say((await copyText($('code').value)) ? 'HTML code copied.' : 'Couldn’t copy. Use Download instead.'));
+  $('form').addEventListener('input', update);
+  $('form').addEventListener('change', update);
+  $('form').addEventListener('submit', (e) => e.preventDefault());
+  $('office').innerHTML = OFFICES.map((o) => `<option value="${esc(o.id)}">${esc(o.label)}</option>`).join('');
+
+  function setBg(mode) {
+    $('stage').classList.toggle('dark', mode === 'dark');
+    $('bgLight').setAttribute('aria-pressed', String(mode === 'light'));
+    $('bgDark').setAttribute('aria-pressed', String(mode === 'dark'));
+  }
+  $('bgLight').addEventListener('click', () => setBg('light'));
+  $('bgDark').addEventListener('click', () => setBg('dark'));
+
+  renderStyles();
+  renderSwatches();
+  update();
+})();
+</script>
+</body>
+</html>
